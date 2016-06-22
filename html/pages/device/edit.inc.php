@@ -13,6 +13,7 @@ if ($_SESSION['userlevel'] < '7') {
 else {
 
   $panes['device']   = 'Device Settings';
+  $panes['oxidizedcreds']   = 'Oxidized';
   $panes['snmp']     = 'SNMP';
   $panes['ports']    = 'Port Settings';
 
