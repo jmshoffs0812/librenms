@@ -228,7 +228,9 @@ if ($_SESSION['authenticated']) {
         require "pages/" . $vars['page'] . ".inc.php";
     }
     else {
-        if (isset($config['front_page']) && is_file($config['front_page'])) {
+        if (isset($config['user_settings'][$_SESSION['username']]['front_page']) && is_file($config['user_settings'][$_SESSION['username']]['front_page'])) {
+            require $config['user_settings'][$_SESSION['username']]['front_page'];
+        } elseif (isset($config['front_page']) && is_file($config['front_page'])) {
             require $config['front_page'];
         }
         else {
