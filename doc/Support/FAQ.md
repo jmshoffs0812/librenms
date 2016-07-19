@@ -15,6 +15,7 @@
  - [Why do I see traffic spikes in my graphs?](#faq15)
  - [Why do I see gaps in my graphs?](#faq17)
  - [How do I change the IP / hostname of a device?](#faq16)
+ - [My device doesn't finish polling within 300 seconds](#faq19)
  - [Things aren't working correctly?](#faq18)
 
 ### Developing
@@ -26,9 +27,7 @@
 
 This is currently well documented within the doc folder of the installation files.
 
-For Debian / Ubuntu installs follow [Debian / Ubuntu](http://docs.librenms.org/Installation/Installation-(Debian-Ubuntu))
-
-For RedHat / CentOS installs follow [RedHat / CentOS](http://docs.librenms.org/Installation/Installation-(RHEL-CentOS))
+Please see the following [doc](http://docs.librenms.org/Installation/Installing-LibreNMS/)
 
 #### <a name="faq2"> How do I add a device?</a>
 
@@ -121,6 +120,14 @@ Usage:
 ```bash
 ./renamehost.php <old hostname> <new hostname>
 ```
+
+#### <a name="faq19"> My device doesn't finish polling within 300 seconds</a>
+
+We have a few things you can try:
+
+  - Disable unnecessary polling modules under edit device.
+  - Set a max repeater value within the snmp settings for a device.
+    What to set this to is tricky, you really should run an snmpbulkwalk with -Cr10 through -Cr50 to see what works best. 50 is usually a good choice if the device can cope.
 
 #### <a name="faq18"> Things aren't working correctly?</a>
 

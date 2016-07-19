@@ -423,6 +423,19 @@ $config['os'][$os]['over'][1]['text']  = 'CPU Usage';
 $config['os'][$os]['over'][2]['graph'] = 'device_mempool';
 $config['os'][$os]['over'][2]['text']  = 'Memory Usage';
 
+$os = 'acs';
+$config['os'][$os]['group']            = "cisco";
+$config['os'][$os]['text']             = 'Cisco ACS';
+$config['os'][$os]['ifname']           = 1;
+$config['os'][$os]['type']             = 'server';
+$config['os'][$os]['icon']             = 'cisco';
+$config['os'][$os]['over'][0]['graph'] = 'device_bits';
+$config['os'][$os]['over'][0]['text']  = 'Device Traffic';
+$config['os'][$os]['over'][1]['graph'] = 'device_processor';
+$config['os'][$os]['over'][1]['text']  = 'CPU Usage';
+$config['os'][$os]['over'][2]['graph'] = 'device_mempool';
+$config['os'][$os]['over'][2]['text']  = 'Memory Usage';
+
 $os = 'cat1900';
 $config['os'][$os]['group']            = 'cat1900';
 $config['os'][$os]['text']             = 'Cisco Catalyst 1900';
@@ -582,6 +595,14 @@ $config['os'][$os]['group'] = 'vrp';
 $config['os'][$os]['text']  = 'Huawei VRP';
 $config['os'][$os]['type']  = 'network';
 $config['os'][$os]['icon']  = 'huawei';
+
+// Huawei access products
+$os = 'smartax';
+$config['os'][$os]['group']  = 'huawei';
+$config['os'][$os]['text']   = 'Huawei SmartAX';
+$config['os'][$os]['type']   = 'network';
+$config['os'][$os]['icon']   = 'huawei';
+$config['os'][$os]['ifname'] = 1;
 
 // ZTE
 $os = 'zxr10';
@@ -753,6 +774,50 @@ $config['os'][$os]['over'][1]['text']  = 'CPU Usage';
 $config['os'][$os]['over'][2]['graph'] = 'device_mempool';
 $config['os'][$os]['over'][2]['text']  = 'Memory Usage';
 
+$os = 'binos';
+$config['os'][$os]['text']             = 'Telco Systems BiNOS';
+$config['os'][$os]['type']             = 'network';
+$config['os'][$os]['icon']             = 'telco-systems';
+$config['os'][$os]['over'][0]['graph'] = 'device_bits';
+$config['os'][$os]['over'][0]['text']  = 'Device Traffic';
+$config['os'][$os]['over'][1]['graph'] = 'device_processor';
+$config['os'][$os]['over'][1]['text']  = 'CPU Usage';
+$config['os'][$os]['over'][2]['graph'] = 'device_mempool';
+$config['os'][$os]['over'][2]['text']  = 'Memory Usage';
+
+$os = 'binox';
+$config['os'][$os]['text']             = 'Telco Systems BiNOX';
+$config['os'][$os]['type']             = 'network';
+$config['os'][$os]['icon']             = 'telco-systems';
+$config['os'][$os]['over'][0]['graph'] = 'device_bits';
+$config['os'][$os]['over'][0]['text']  = 'Device Traffic';
+$config['os'][$os]['over'][1]['graph'] = 'device_processor';
+$config['os'][$os]['over'][1]['text']  = 'CPU Usage';
+$config['os'][$os]['over'][2]['graph'] = 'device_mempool';
+$config['os'][$os]['over'][2]['text']  = 'Memory Usage';
+
+$os = 'lantronix-slc';
+$config['os'][$os]['text']             = 'Lantronix SLC';
+$config['os'][$os]['type']             = 'network';
+$config['os'][$os]['icon']             = 'lantronix';
+$config['os'][$os]['over'][0]['graph'] = 'device_bits';
+$config['os'][$os]['over'][0]['text']  = 'Device Traffic';
+$config['os'][$os]['over'][1]['graph'] = 'device_processor';
+$config['os'][$os]['over'][1]['text']  = 'CPU Usage';
+$config['os'][$os]['over'][2]['graph'] = 'device_mempool';
+$config['os'][$os]['over'][2]['text']  = 'Memory Usage';
+
+$os = 'adtran-aos';
+$config['os'][$os]['text']             = 'Adtran AOS';
+$config['os'][$os]['type']             = 'network';
+$config['os'][$os]['icon']             = 'adtran';
+$config['os'][$os]['over'][0]['graph'] = 'device_bits';
+$config['os'][$os]['over'][0]['text']  = 'Device Traffic';
+$config['os'][$os]['over'][1]['graph'] = 'device_processor';
+$config['os'][$os]['over'][1]['text']  = 'CPU Usage';
+$config['os'][$os]['over'][2]['graph'] = 'device_mempool';
+$config['os'][$os]['over'][2]['text']  = 'Memory Usage';
+
 $os = 'bintec-smart';
 $config['os'][$os]['text']             = 'Bintec Smart Router';
 $config['os'][$os]['type']             = 'network';
@@ -760,6 +825,17 @@ $config['os'][$os]['icon']             = 'bintec';
 $config['os'][$os]['over'][0]['graph'] = 'device_bits';
 $config['os'][$os]['over'][0]['text']  = 'Device Traffic';
 $config['os'][$os]['over'][1]['graph'] = 'device_fortigate_cpu';
+$config['os'][$os]['over'][1]['text']  = 'CPU Usage';
+$config['os'][$os]['over'][2]['graph'] = 'device_mempool';
+$config['os'][$os]['over'][2]['text']  = 'Memory Usage';
+
+$os = 'aen';
+$config['os'][$os]['text']             = 'Accedian AEN';
+$config['os'][$os]['type']             = 'network';
+$config['os'][$os]['icon']             = 'accedian';
+$config['os'][$os]['over'][0]['graph'] = 'device_bits';
+$config['os'][$os]['over'][0]['text']  = 'Device Traffic';
+$config['os'][$os]['over'][1]['graph'] = 'device_processor';
 $config['os'][$os]['over'][1]['text']  = 'CPU Usage';
 $config['os'][$os]['over'][2]['graph'] = 'device_mempool';
 $config['os'][$os]['over'][2]['text']  = 'Memory Usage';
@@ -1647,7 +1723,7 @@ $config['os'][$os]['over'][0]['text']  = 'Traffic';
 $os = 'macosx';
 $config['os'][$os]['text']             = 'Apple OS X';
 $config['os'][$os]['type']             = 'server';
-$config['os'][$os]['icon']             = 'generic';
+$config['os'][$os]['icon']             = 'apple';
 $config['os'][$os]['over'][0]['graph'] = 'device_bits';
 $config['os'][$os]['over'][0]['text']  = 'Traffic';
 
@@ -1735,6 +1811,11 @@ $os = 'nios';
 $config['os'][$os]['text']             = 'Infoblox';
 $config['os'][$os]['type']             = 'appliance';
 $config['os'][$os]['icon']             = 'infoblox';
+
+$os = 'ibm-amm';
+$config['os'][$os]['text']             = 'IBM AMM';
+$config['os'][$os]['type']             = 'appliance';
+$config['os'][$os]['icon']             = 'ibmnos';
 
 // Oracle ILOM
 $os = 'oracle-ilom';

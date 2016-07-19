@@ -1535,3 +1535,13 @@ function create_sensor_to_state_index($device, $state_name, $index)
         dbInsert($insert, 'sensors_to_state_indexes');
     }
 }
+
+function delta_to_bits($delta,$period) {
+    return round(($delta * 8 / $period), 2);
+}
+
+function report_this($message) {
+    global $config;
+    return '<h2>'.$message.' Please <a href="'.$config['project_issues'].'">report this</a> to the '.$config['project_name'].' developers.</h2>';
+
+}//end report_this()
