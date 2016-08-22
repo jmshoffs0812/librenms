@@ -160,14 +160,15 @@ foreach (dbFetchRows($sql, $param) as $alert) {
         <div class="incident">
         '.generate_device_link($alert).'
         <div id="incident'.($rulei + 1).'" class="collapse">'.$fault_detail.'</div>
-        </div>';
+        </div>
+        <div>'.$alert['location'].'</div>
+        <div>'.($alert['timestamp'] ? $alert['timestamp'] : 'N/A').'</div>';
 
     $response[] = array(
         'id'        => $rulei++,
         'rule'      => '<i title="'.htmlentities($alert['rule']).'"><a href="'.generate_url(array('page'=>'alert-rules')).'">'.htmlentities($alert['name']).'</a></i>',
         'details'   => '<a class="glyphicon glyphicon-plus incident-toggle" style="display:none" data-toggle="collapse" data-target="#incident'.($rulei).'" data-parent="#alerts"></a>',
         'hostname'  => $hostname,
-        'timestamp' => ($alert['timestamp'] ? $alert['timestamp'] : 'N/A'),
         'severity'  => $severity,
         'ack_col'   => $ack_col,
         'state'     => $alert['state'],

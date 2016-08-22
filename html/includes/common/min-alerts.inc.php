@@ -80,7 +80,7 @@ $common_output[] = '                <th data-column-id="status" data-formatter="
 // $common_output[] = '                <th data-column-id="rule">Rule</th>';
 // $common_output[] = '                <th data-column-id="details" data-sortable="false">&nbsp;</th>';
 $common_output[] = '                <th data-column-id="hostname">Hostname</th>';
-$common_output[] = '                <th data-column-id="timestamp">Timestamp</th>';
+// $common_output[] = '                <th data-column-id="timestamp">Timestamp</th>';
 $common_output[] = '                <th data-column-id="severity" data-formatter="severity">Severity</th>';
 $common_output[] = '                <th data-column-id="ack" data-formatter="ack" data-sortable="false">Ack</th>';
     $common_output[] = '

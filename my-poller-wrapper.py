@@ -152,7 +152,7 @@ if ('distributed_poller' in config and
             if memc.get("poller.master") is None:
                 print "Registered as Master"
                 memc.set("poller.master", config['distributed_poller_name'], 10)
-                memc.set("poller.nodes", 0, 300)
+                memc.set("poller.nodes", 0, 360)
                 IsNode = False
             else:
                 print "Registered as Node joining Master %s" % memc.get("poller.master")
@@ -270,7 +270,7 @@ def printworker():
         real_duration += elapsed_time
         per_device_duration[device_id] = elapsed_time
         polled_devices += 1
-        if elapsed_time < 300:
+        if elapsed_time < 360:
             print "INFO: worker %s finished device %s in %s seconds" % (worker_id, device_id, elapsed_time)
         else:
             print "WARNING: worker %s finished device %s in %s seconds" % (worker_id, device_id, elapsed_time)
@@ -288,7 +288,7 @@ def poll_worker():
 # (c) 2015, GPLv3, Daniel Preussker <f0o@devilcode.org> <<<EOC5
         if not distpoll or memc.get('poller.device.' + str(device_id)) is None:
             if distpoll:
-                result = memc.add('poller.device.' + str(device_id), config['distributed_poller_name'], 300)
+                result = memc.add('poller.device.' + str(device_id), config['distributed_poller_name'], 360)
                 if not result:
                     print "This device (%s) appears to be being polled by another poller" % (device_id)
                     poll_queue.task_done()
@@ -385,17 +385,17 @@ else:
 db.close()
 
 
-if total_time > 300:
-    print "WARNING: the process took more than 5 minutes to finish, you need faster hardware or more threads"
+if total_time > 360:
+    print "WARNING: the process took more than 6 minutes to finish, you need faster hardware or more threads"
     print "INFO: in sequential style polling the elapsed time would have been: %s seconds" % real_duration
     for device in per_device_duration:
-        if per_device_duration[device] > 300:
+        if per_device_duration[device] > 360:
             print "WARNING: device %s is taking too long: %s seconds" % (device, per_device_duration[device])
             show_stopper = True
     if show_stopper:
-        print "ERROR: Some devices are taking more than 300 seconds, the script cannot recommend you what to do."
+        print "ERROR: Some devices are taking more than 360 seconds, the script cannot recommend you what to do."
     else:
-        recommend = int(total_time / 300.0 * amount_of_workers + 1)
+        recommend = int(total_time / 360.0 * amount_of_workers + 1)
         print "WARNING: Consider setting a minimum of %d threads. (This does not constitute professional advice!)" % recommend
 
     sys.exit(2)
