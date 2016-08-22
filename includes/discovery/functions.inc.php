@@ -12,6 +12,8 @@
  * See COPYING for more details.
  */
 
+use LibreNMS\Exceptions\HostExistsException;
+
 function discover_new_device($hostname, $device = '', $method = '', $interface = '') {
     global $config;
 
@@ -53,8 +55,8 @@ function discover_new_device($hostname, $device = '', $method = '', $interface =
     }
 
     if (match_network($config['nets'], $ip)) {
-        $remote_device_id = addHost($dst_host, '', '161', 'udp', '0', $config['distributed_poller_group']);
-        if ($remote_device_id) {
+        try {
+            $remote_device_id = addHost($dst_host, '', '161', 'udp', $config['distributed_poller_group']);
             $remote_device = device_by_id_cache($remote_device_id, 1);
             echo '+[' . $remote_device['hostname'] . '(' . $remote_device['device_id'] . ')]';
             discover_device($remote_device);
@@ -72,9 +74,10 @@ function discover_new_device($hostname, $device = '', $method = '', $interface =
             }
 
             return $remote_device_id;
-        } 
-        else {
-            log_event("$method discovery of " . $dst_host . " ($ip) failed - Check ping and SNMP access", $device['device_id'], 'discovery');
+        } catch (HostExistsException $e) {
+            // already have this device
+        } catch (Exception $e) {
+            log_event("$method discovery of " . $dst_host . " ($ip) failed - " . $e->getMessage());
         }
     } else {
         d_echo("$ip not in a matched network - skipping\n");
@@ -89,6 +92,7 @@ function discover_device($device, $options = null) {
     $valid = array();
     // Reset $valid array
     $attribs = get_dev_attribs($device['device_id']);
+    $device['snmp_max_repeaters'] = $attribs['snmp_max_repeaters'];
 
     $device_start = microtime(true);
     // Start counting device poll time
@@ -100,6 +104,13 @@ function discover_device($device, $options = null) {
         if ($device['os'] != 'generic') {
             echo "\nDevice os was updated to " . $device['os'] . '!';
             dbUpdate(array('os' => $device['os']), 'devices', '`device_id` = ?', array($device['device_id']));
+        }
+    }
+
+    // Set type to a predefined type for the OS if it's not already set
+    if ($device['type'] == 'unknown' || $device['type'] == '') {
+        if ($config['os'][$device['os']]['type']) {
+            $device['type'] = $config['os'][$device['os']]['type'];
         }
     }
 
@@ -140,13 +151,6 @@ function discover_device($device, $options = null) {
     if (is_mib_poller_enabled($device)) {
         $devicemib = array($device['sysObjectID'] => 'all');
         register_mibs($device, $devicemib, "includes/discovery/functions.inc.php");
-    }
-
-    // Set type to a predefined type for the OS if it's not already set
-    if ($device['type'] == 'unknown' || $device['type'] == '') {
-        if ($config['os'][$device['os']]['type']) {
-            $device['type'] = $config['os'][$device['os']]['type'];
-        }
     }
 
     $device_end = microtime(true);

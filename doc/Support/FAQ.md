@@ -17,9 +17,11 @@
  - [How do I change the IP / hostname of a device?](#faq16)
  - [My device doesn't finish polling within 300 seconds](#faq19)
  - [Things aren't working correctly?](#faq18)
+ - [What do the values mean in my graphs?](#faq21)
 
 ### Developing
  - [How do I add support for a new OS?](#faq8)
+ - [What information do you need to add a new OS?](#faq20)
  - [What can I do to help?](#faq9)
  - [How can I test another users branch?](#faq13)
 
@@ -74,6 +76,9 @@ If the page you are trying to load has a substantial amount of data in it then i
 #### <a name="faq10"> Why do I not see any graphs?</a>
 
 The easiest way to check if all is well is to run `./validate.php` as root from within your install directory. This should give you info on why things aren't working.
+
+One other reason could be a restricted snmpd.conf file or snmp view which limits the data sent back. If you use net-snmp then we suggest using 
+the (included snmpd.conf)[https://raw.githubusercontent.com/librenms/librenms/master/snmpd.conf.example] file.
 
 #### <a name="faq7"> How do I debug pages not loading correctly?</a>
 
@@ -137,6 +142,26 @@ Re-run `./validate.php` once you've resolved any issues raised.
 
 You have an odd issue - we'd suggest you join our irc channel to discuss.
 
+#### <a name="faq22"> What do the values mean in my graphs?</a>
+
+The values you see are reported as metric values. Thanks to a post on [Reddit](https://www.reddit.com/r/networking/comments/4xzpfj/rrd_graph_interface_error_label_what_is_the_m/) 
+here are those values:
+
+```
+10^-18  a - atto
+10^-15  f - femto
+10^-12  p - pico
+10^-9   n - nano
+10^-6   u - micro
+10^-3   m - milli
+0    (no unit)
+10^3    k - kilo
+10^6    M - mega
+10^9    G - giga
+10^12   T - tera
+10^15   P - peta
+```
+
 #### <a name="faq8"> How do I add support for a new OS?</a>
 
 The easiest way to show you how to do that is to link to an existing pull request that has been merged in on [GitHub](https://github.com/librenms/librenms/pull/352/files)
@@ -152,6 +177,20 @@ sysObjectID or sysDescr, or the existence of a particular enterprise tree.
 This file will usually set the variables for $version and $hardware gained from an snmp lookup.
 **html/images/os/$os.png**
 This is a 32x32 png format image of the OS you are adding support for.
+
+#### <a name="faq20"> What information do you need to add a new OS?</a>
+
+Please provide the following output as seperate non-expiring pastebin.com links.
+
+Replace the relevant information in these commands such as HOSTNAME and COMMUNITY.
+
+```bash
+./discovery.php -h HOSTNAME -d -m os
+./poller.php -h HOSTNAME -r -f -d -m os
+snmpbulkwalk -On -v2c -c COMMUNITY HOSTNAME .
+```
+
+If possible please also provide what the OS name should be if it doesn't exist already.
 
 #### <a name="faq9"> What can I do to help?</a>
 
