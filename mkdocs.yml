@@ -4,7 +4,8 @@ theme_dir: 'librenms_theme'
 site_dir: out
 site_url: http://docs.librenms.org
 markdown_extensions:
-    - pymdownx.superfences
+    - pymdownx.tasklist
+    - mdx_del_ins
 extra_css:
     - librenms.css
 include_next_prev: false
@@ -24,10 +25,6 @@ pages:
     - CentOS 7 (Nginx): Installation/Installation-CentOS-7-Nginx.md
     - CentOS 7 (Apache): Installation/Installation-CentOS-7-Apache.md
     - Older Docs: Installation/Installing-LibreNMS.md
-#    - Ubuntu 14.04 (Nginx): Installation/Installation-Ubuntu-1404-Nginx.md
-#    - Ubuntu 14.04 (Apache): Installation/Installation-Ubuntu-1404-Apache.md
-#    - Ubuntu 14.04 (Lighttpd): Installation/Installation-Ubuntu-1404-Lighttpd.md
-#    - CentOS 6 (Apache/Nginx): Installation/Installation-CentOS-6-Apache-Nginx.md
     - Migrating from Observium: Installation/Migrating-from-Observium.md
 - General:
     - General/Acknowledgement.md
@@ -36,6 +33,7 @@ pages:
     - General/Contributing.md
     - General/Credits.md
     - General/Updating.md
+    - General/Releases.md
     - General/Welcome-to-Observium-users.md
 - Extensions:
     - Extensions/Alerting.md
@@ -57,6 +55,7 @@ pages:
     - Extensions/MIB-based-polling.md
     - Extensions/Memcached.md
     - Extensions/Network-Map.md
+    - Extensions/NFSen.md
     - Extensions/Oxidized.md
     - Extensions/Plugin-System.md
     - Extensions/Poller-Service.md
@@ -73,12 +72,19 @@ pages:
     - Extensions/Two-Factor-Auth.md
     - Extensions/Varnish.md
 - Developing:
+    - Developing/Using-Git.md
     - Developing/Code-Guidelines.md
+    - Developing/Style-Guidelines.md
+    - Developing/Validating-Code.md
     - Developing/Code-Structure.md
+
+    - Developing/Creating-Documentation.md
+    - Developing/Support-New-OS.md
     - Developing/Dynamic-Config.md
     - Developing/Sensor-State-Support.md
-    - Developing/Style-Guidelines.md
-    - Developing/Using-Git.md
+
+    - Developing/Merging-Pull-Requests.md
+    - Developing/Creating-Release.md
 - API: API/API-Docs.md
 - Support:
     - Support/Configuration.md
@@ -88,4 +94,12 @@ pages:
     - Support/Install Validation.md
     - Support/Performance.md
     - Support/Poller Support.md
+    - Support/SNMP-Configuration-Examples.md
+- hidden:
+    - Ubuntu 14.04 (Nginx): Installation/Installation-Ubuntu-1404-Nginx.md
+    - Ubuntu 14.04 (Apache): Installation/Installation-Ubuntu-1404-Apache.md
+    - Ubuntu 14.04 (Lighttpd): Installation/Installation-Ubuntu-1404-Lighttpd.md
+    - CentOS 6 (Apache/Nginx): Installation/Installation-CentOS-6-Apache-Nginx.md
+    - Installation/Installation-(Debian-Ubuntu).md
+    - Installation/Installation-(RHEL-CentOS).md
     - Support/Support-New-OS.md

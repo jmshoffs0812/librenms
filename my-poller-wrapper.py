@@ -270,7 +270,7 @@ def printworker():
         real_duration += elapsed_time
         per_device_duration[device_id] = elapsed_time
         polled_devices += 1
-        if elapsed_time < 360:
+        if elapsed_time < 480:
             print "INFO: worker %s finished device %s in %s seconds" % (worker_id, device_id, elapsed_time)
         else:
             print "WARNING: worker %s finished device %s in %s seconds" % (worker_id, device_id, elapsed_time)
@@ -385,8 +385,8 @@ else:
 db.close()
 
 
-if total_time > 360:
-    print "WARNING: the process took more than 6 minutes to finish, you need faster hardware or more threads"
+if total_time > 380:
+    print "WARNING: the process took more than 8 minutes to finish, you need faster hardware or more threads"
     print "INFO: in sequential style polling the elapsed time would have been: %s seconds" % real_duration
     for device in per_device_duration:
         if per_device_duration[device] > 360:

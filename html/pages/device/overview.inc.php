@@ -36,6 +36,11 @@ require 'includes/dev-overview-data.inc.php';
 LibreNMS\Plugins::call('device_overview_container', array($device));
 
 require 'overview/ports.inc.php';
+
+if ($device['os'] == 'cimc') {
+    require 'overview/cimc.inc.php';
+}
+
 echo('
     </div>
     <div class="col-md-6">
@@ -57,6 +62,7 @@ require 'overview/sensors/fanspeeds.inc.php';
 require 'overview/sensors/dbm.inc.php';
 require 'overview/sensors/voltages.inc.php';
 require 'overview/sensors/current.inc.php';
+require 'overview/sensors/runtime.inc.php';
 require 'overview/sensors/power.inc.php';
 require 'overview/sensors/frequencies.inc.php';
 require 'overview/sensors/load.inc.php';

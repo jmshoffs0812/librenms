@@ -1,0 +1,30 @@
+#!/bin/bash
+PATH=/usr/bin:/bin
+
+if [ $# -lt 1 ]; then
+  echo "SYNTAX: $0 QUERY TYPE (Defaults to \"A\")"
+  exit 1
+fi
+
+QUERY=$1
+TYPE="A"
+
+if [ "$2" != "" ]; then
+  TYPE=$2
+fi
+
+PRIVATE="216.162.128.4 216.162.128.5 216.162.128.6 216.162.128.163 216.162.130.163"
+PUBLIC="208.67.222.222 8.8.8.8"
+
+for SERVER in $PRIVATE ; do
+  echo $SERVER
+  echo "$(dig +noall +answer @${SERVER} $QUERY $TYPE)"
+  echo
+done
+echo
+for SERVER in $PUBLIC ; do
+  echo $SERVER
+  echo "$(dig +noall +answer @${SERVER} $QUERY $TYPE)"
+  echo
+done
+

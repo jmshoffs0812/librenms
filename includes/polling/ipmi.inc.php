@@ -11,7 +11,7 @@ if ($ipmi['host'] = get_dev_attrib($device, 'ipmi_hostname')) {
     echo 'Fetching IPMI sensor data...';
 
     if ($config['own_hostname'] != $device['hostname'] || $ipmi['host'] != 'localhost') {
-        $remote = ' -H '.$ipmi['host'].' -U '.$ipmi['user'].' -P '.$ipmi['password'];
+        $remote = " -H ".$ipmi['host']." -U '".$ipmi['user']."' -P '".$ipmi['password']."' -L USER";
     }
 
     $results = external_exec($config['ipmitool'].' -I '.$ipmi['type'].' -c '.$remote.' sdr 2>/dev/null');
@@ -47,7 +47,7 @@ if ($ipmi['host'] = get_dev_attrib($device, 'ipmi_hostname')) {
             'rrd_name' => $rrd_name,
             'rrd_def' => $rrd_def
         );
-        data_update($device,'ipmi',$tags,$fields);
+        data_update($device, 'ipmi', $tags, $fields);
 
         // FIXME warnings in event & mail not done here yet!
         dbUpdate(array('sensor_current' => $sensor, 'lastupdate' => array('NOW()')), 'sensors', 'poller_type = ? AND sensor_class = ? AND sensor_id = ?', array('ipmi', $ipmisensors['sensor_class'], $ipmisensors['sensor_id']));
