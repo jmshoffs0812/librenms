@@ -63,6 +63,8 @@ class DiscoveryTest extends \PHPUnit_Framework_TestCase
             'retries' => 0,
             'snmp_max_repeaters' => 10,
             'community' => $community,
+            'os' => 'generic',
+            'os_group' => '',
         );
     }
 
@@ -308,6 +310,11 @@ class DiscoveryTest extends \PHPUnit_Framework_TestCase
         $this->checkOS('catos');
     }
 
+    public function testCeraos()
+    {
+        $this->checkOS('ceraos');
+    }
+
     public function testCimc()
     {
         $this->checkOS('cimc');
@@ -471,6 +478,7 @@ class DiscoveryTest extends \PHPUnit_Framework_TestCase
     {
         $this->checkOS('edgeos');
         $this->checkOS('edgeos', 'edgeos-erl');
+        $this->checkOS('edgeos', 'edgeos-er');
     }
 
     public function testEdgeswitch()
@@ -550,6 +558,11 @@ class DiscoveryTest extends \PHPUnit_Framework_TestCase
     public function testFortios()
     {
         $this->checkOS('fortios');
+    }
+
+    public function testFortiswitch()
+    {
+        $this->checkOS('fortiswitch');
     }
 
     public function testFoundryos()
@@ -1001,6 +1014,11 @@ class DiscoveryTest extends \PHPUnit_Framework_TestCase
         $this->checkOS('pbn');
     }
 
+    public function testPbncpe()
+    {
+        $this->checkOS('pbn-cp');
+    }
+
     public function testPcoweb()
     {
         $this->checkOS('pcoweb');
@@ -1034,6 +1052,12 @@ class DiscoveryTest extends \PHPUnit_Framework_TestCase
     public function testPoweralert()
     {
         $this->checkOS('poweralert');
+        $this->checkOS('poweralert', 'poweralert1');
+    }
+
+    public function testPowerconnect()
+    {
+        $this->checkOS('powerconnect');
     }
 
     public function testPowervault()
