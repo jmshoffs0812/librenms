@@ -351,6 +351,11 @@ class DiscoveryTest extends \PHPUnit_Framework_TestCase
         $this->checkOS('ciscowlc');
     }
 
+    public function testCmts()
+    {
+        $this->checkOS('cmts');
+    }
+
     public function testCometsystemp85xx()
     {
         $this->checkOS('cometsystem-p85xx');
@@ -473,6 +478,10 @@ class DiscoveryTest extends \PHPUnit_Framework_TestCase
     {
         $this->checkOS('edgecos', 'edgecos-es3528m');
         $this->checkOS('edgecos', 'edgecos-ecs4120-28f');
+        $this->checkOS('edgecos', 'edgecos-es3528mv2');
+        $this->checkOS('edgecos', 'edgecos-ecs4510-28f');
+        $this->checkOS('edgecos', 'edgecos-ecs4510-52t');
+        $this->checkOS('edgecos', 'edgecos-ecs4210-28t');
     }
 
     public function testEdgeos()
@@ -855,6 +864,11 @@ class DiscoveryTest extends \PHPUnit_Framework_TestCase
         $this->checkOS('minkelsrms');
     }
 
+    public function testMirth()
+    {
+        $this->checkOS('mirth');
+    }
+
     public function testMonowall()
     {
         $this->checkOS('monowall');
@@ -953,6 +967,7 @@ class DiscoveryTest extends \PHPUnit_Framework_TestCase
         $this->checkOS('nos');
         $this->checkOS('nos', 'nos1');
         $this->checkOS('nos', 'nos2');
+        $this->checkOS('nos', 'nos3');
     }
 
     public function testNrg()
@@ -1111,6 +1126,11 @@ class DiscoveryTest extends \PHPUnit_Framework_TestCase
     public function testPulse()
     {
         $this->checkOS('pulse');
+        $this->checkOS('pulse', 'pulse-mag2600');
+        $this->checkOS('pulse', 'pulse-sa2500');
+        $this->checkOS('pulse', 'pulse-sa6500');
+        $this->checkOS('pulse', 'pulse-vaspe');
+        $this->checkOS('pulse', 'pulse-sa');
     }
 
     public function testQnap()
@@ -1210,6 +1230,11 @@ class DiscoveryTest extends \PHPUnit_Framework_TestCase
     public function testServeriron()
     {
         $this->checkOS('serveriron');
+    }
+
+    public function testSgos()
+    {
+        $this->checkOS('sgos');
     }
 
     public function testSharp()
@@ -1426,6 +1451,7 @@ class DiscoveryTest extends \PHPUnit_Framework_TestCase
     {
         $this->checkOS('zynos', 'zynos-es');
         $this->checkOS('zynos', 'zynos-gs');
+        $this->checkOS('zynos', 'zynos-mes3528');
     }
 
     public function testZywall()
