@@ -73,7 +73,9 @@ function get_graph_by_port_hostname()
     $auth           = '1';
     $vars['id']     = dbFetchCell("SELECT `P`.`port_id` FROM `ports` AS `P` JOIN `devices` AS `D` ON `P`.`device_id` = `D`.`device_id` WHERE `D`.`hostname`=? AND `P`.`$port`=?", array($hostname, $vars['port']));
     $app->response->headers->set('Content-Type', 'image/png');
+    rrdtool_initialize(false);
     include 'includes/graphs/graph.inc.php';
+    rrdtool_close();
 }
 
 
@@ -96,7 +98,17 @@ function get_port_stats_by_port_hostname()
     $port['out_perc'] = number_format($out_rate / $port['ifSpeed'] * 100, 2, '.', '');
     $port['in_pps'] = format_bi($port['ifInUcastPkts_rate']);
     $port['out_pps'] = format_bi($port['ifOutUcastPkts_rate']);
-    
+
+    //only return requested columns
+    if (isset($_GET['columns'])) {
+        $cols = explode(",", $_GET['columns']);
+        foreach (array_keys($port) as $c) {
+            if (!in_array($c, $cols)) {
+                unset($port[$c]);
+            }
+        }
+    }
+
     $output    = array(
         'status' => 'ok',
         'port'   => $port,
@@ -113,8 +125,13 @@ function get_graph_generic_by_hostname()
     $app          = \Slim\Slim::getInstance();
     $router       = $app->router()->getCurrentRoute()->getParams();
     $hostname     = $router['hostname'];
+    $sensor_id    = $router['sensor_id'] ?: null;
     $vars         = array();
     $vars['type'] = $router['type'] ?: 'device_uptime';
+    if (isset($sensor_id)) {
+        $vars['id']   = $sensor_id;
+        $vars['type'] = str_replace('device_', 'sensor_', $vars['type']);
+    }
 
     // use hostname as device_id if it's all digits
     $device_id = ctype_digit($hostname) ? $hostname : getidbyname($hostname);
@@ -133,7 +150,9 @@ function get_graph_generic_by_hostname()
     $auth           = '1';
     $vars['device'] = dbFetchCell('SELECT `D`.`device_id` FROM `devices` AS `D` WHERE `D`.`hostname`=?', array($hostname));
     $app->response->headers->set('Content-Type', 'image/png');
+    rrdtool_initialize(false);
     include 'includes/graphs/graph.inc.php';
+    rrdtool_close();
 }
 
 
@@ -159,6 +178,10 @@ function get_device()
         echo _json_encode($output);
         $app->stop();
     } else {
+        $host_id = get_vm_parent_id($device);
+        if (is_numeric($host_id)) {
+            $device = array_merge($device, array('parent_id' => $host_id));
+        }
         $output = array(
             'status'  => 'ok',
             'devices' => array($device),
@@ -166,7 +189,6 @@ function get_device()
         echo _json_encode($output);
     }
 }
-
 
 function list_devices()
 {
@@ -213,7 +235,11 @@ function list_devices()
     }
     $devices = array();
     foreach (dbFetchRows("SELECT * FROM `devices` $join WHERE $sql ORDER by $order", $param) as $device) {
+        $host_id = get_vm_parent_id($device);
         $device['ip'] = inet6_ntop($device['ip']);
+        if (is_numeric($host_id)) {
+            $device['parent_id'] = $host_id;
+        }
         $devices[] = $device;
     }
 
@@ -251,7 +277,7 @@ function add_device()
     $port         = $data['port'] ? mres($data['port']) : $config['snmp']['port'];
     $transport    = $data['transport'] ? mres($data['transport']) : 'udp';
     $poller_group = $data['poller_group'] ? mres($data['poller_group']) : 0;
-    $force_add    = $data['force_add'] ? mres($data['force_add']) : 0;
+    $force_add    = $data['force_add'] ? true : false;
     if ($data['version'] == 'v1' || $data['version'] == 'v2c') {
         if ($data['community']) {
             $config['snmp']['community'] = array($data['community']);
@@ -487,7 +513,9 @@ function get_graph_by_portgroup()
     $vars['type'] = 'multiport_bits_separate';
     $vars['id']   = $if_list;
     $app->response->headers->set('Content-Type', 'image/png');
+    rrdtool_initialize(false);
     include 'includes/graphs/graph.inc.php';
+    rrdtool_close();
 }
 
 
@@ -668,6 +696,53 @@ function get_graphs()
     echo _json_encode($output);
 }
 
+function list_available_health_graphs()
+{
+    global $config;
+    $code     = 200;
+    $status   = 'ok';
+    $message  = '';
+    $app      = \Slim\Slim::getInstance();
+    $router   = $app->router()->getCurrentRoute()->getParams();
+    $hostname = $router['hostname'];
+    $device_id = ctype_digit($hostname) ? $hostname : getidbyname($hostname);
+    if (isset($router['type'])) {
+        list($dump, $type) = explode('_', $router['type']);
+    }
+    $sensor_id = $router['sensor_id'] ?: null;
+    $graphs    = array();
+
+    if (isset($type)) {
+        if (isset($sensor_id)) {
+              $graphs = dbFetchRows('SELECT * FROM `sensors` WHERE `sensor_id` = ?', array($sensor_id));
+        } else {
+            foreach (dbFetchRows('SELECT `sensor_id`, `sensor_descr` FROM `sensors` WHERE `device_id` = ? AND `sensor_class` = ? AND `sensor_deleted` = 0', array($device_id, $type)) as $graph) {
+                $graphs[] = array(
+                    'sensor_id' => $graph['sensor_id'],
+                    'desc'      => $graph['sensor_descr'],
+                );
+            }
+        }
+    } else {
+        foreach (dbFetchRows('SELECT `sensor_class` FROM `sensors` WHERE `device_id` = ? AND `sensor_deleted` = 0 GROUP BY `sensor_class`', array($device_id)) as $graph) {
+            $graphs[] = array(
+                'desc' => ucfirst($graph['sensor_class']),
+                'name' => 'device_'.$graph['sensor_class'],
+            );
+        }
+    }
+
+    $total_graphs = count($graphs);
+    $output       = array(
+        'status'  => "$status",
+        'err-msg' => $message,
+        'count'   => $total_graphs,
+        'graphs'  => $graphs,
+    );
+    $app->response->setStatus($code);
+    $app->response->headers->set('Content-Type', 'application/json');
+    echo _json_encode($output);
+}
 
 function get_port_graphs()
 {
@@ -1007,6 +1082,8 @@ function get_inventory()
         $total_inv = 0;
         $inventory = array();
     } else {
+        $sql .= ' AND `device_id`=?';
+        $params[] = $device_id;
         $inventory = dbFetchRows("SELECT * FROM `entPhysical` WHERE 1 $sql", $params);
         $code      = 200;
         $status    = 'ok';

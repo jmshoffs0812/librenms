@@ -31,6 +31,8 @@ $config['log_dir']     = $config['install_dir'].'/logs';
 
 // MySQL extension to use
 $config['db']['extension']       = 'mysqli';//mysql and mysqli available
+// MySQL Debug level
+$config['mysql_log_level']       = 'ERROR';
 
 // What is my own hostname (used to identify this host in its own database)
 $config['own_hostname'] = 'localhost';
@@ -705,6 +707,7 @@ $config['poller_modules']['mib']                         = 0;
 $config['poller_modules']['stp']                         = 1;
 $config['poller_modules']['ntp']                         = 1;
 $config['poller_modules']['services']                    = 1;
+$config['poller_modules']['loadbalancers']               = 0;
 
 // List of discovery modules. Need to be in this array to be
 // considered for execution.
@@ -741,14 +744,15 @@ $config['discovery_modules']['ucd-diskio']           = 1;
 $config['discovery_modules']['services']             = 1;
 $config['discovery_modules']['stp']                  = 1;
 $config['discovery_modules']['ntp']                  = 1;
+$config['discovery_modules']['loadbalancers']        = 0;
 
 $config['modules_compat']['rfc1628']['liebert']    = 1;
 $config['modules_compat']['rfc1628']['netmanplus'] = 1;
 $config['modules_compat']['rfc1628']['deltaups']   = 1;
 $config['modules_compat']['rfc1628']['poweralert'] = 1;
-$config['modules_compat']['rfc1628']['multimatic'] = 1;
 $config['modules_compat']['rfc1628']['webpower']   = 1;
 $config['modules_compat']['rfc1628']['huaweiups']  = 1;
+$config['modules_compat']['rfc1628']['generex-ups']  = 1;
 
 // Enable daily updates
 $config['update'] = 1;
@@ -831,7 +835,7 @@ $config['unix-agent-read-time-out'] = 10;
 // seconds
 
 // Lat / Lon support for maps
-$config['geoloc']['latlng']                             = false; // True to enable translation of location to latlng co-ordinates
+$config['geoloc']['latlng']                             = true; // True to enable translation of location to latlng co-ordinates
 $config['geoloc']['engine']                             = 'google';
 $config['map']['engine']                                = 'leaflet';
 $config['mapael']['default_map']                        = 'maps/world_countries.js';
