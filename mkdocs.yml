@@ -89,6 +89,7 @@ pages:
     - Developing/Creating-Release.md
 - API: API/API-Docs.md
 - Support:
+    - Support/1-Minute-Polling.md
     - Support/Configuration.md
     - Support/Discovery Support.md
     - Support/Example-Hardware-Setup.md
@@ -107,4 +108,5 @@ pages:
     - Installation/Installation-(Debian-Ubuntu).md
     - Installation/Installation-(RHEL-CentOS).md
     - Support/Support-New-OS.md
+    - Extensions/Agent-Setup.md
     - Extensions/RRDCached-Security.md

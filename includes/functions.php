@@ -65,14 +65,7 @@ function array_sort($array, $on, $order = SORT_ASC)
 
 function mac_clean_to_readable($mac)
 {
-    $r = substr($mac, 0, 2);
-    $r .= ":".substr($mac, 2, 2);
-    $r .= ":".substr($mac, 4, 2);
-    $r .= ":".substr($mac, 6, 2);
-    $r .= ":".substr($mac, 8, 2);
-    $r .= ":".substr($mac, 10, 2);
-
-    return($r);
+    return rtrim(chunk_split($mac, 2, ':'), ':');
 }
 
 function only_alphanumeric($string)
@@ -231,12 +224,18 @@ function getLogo($device)
 }
 
 /**
- * @param $device
+ * @param array $device
+ * @param string $class to apply to the image tag
  * @return string an image tag with the logo for this device. Images are often wide, not square.
  */
-function getLogoTag($device)
+function getLogoTag($device, $class = null)
 {
-    return '<img src="' . getLogo($device) . '" title="' . getImageTitle($device) . '"/>';
+    $tag = '<img src="' . getLogo($device) . '" title="' . getImageTitle($device) . '"';
+    if (isset($class)) {
+        $tag .= " class=\"$class\" ";
+    }
+    $tag .= ' />';
+    return  $tag;
 }
 
 /**
@@ -306,9 +305,9 @@ function renamehost($id, $new, $source = 'console')
     $host = dbFetchCell("SELECT `hostname` FROM `devices` WHERE `device_id` = ?", array($id));
     if (!is_dir($config['rrd_dir']."/$new") && rename($config['rrd_dir']."/$host", $config['rrd_dir']."/$new") === true) {
         dbUpdate(array('hostname' => $new), 'devices', 'device_id=?', array($id));
-        log_event("Hostname changed -> $new ($source)", $id, 'system');
+        log_event("Hostname changed -> $new ($source)", $id, 'system', 3);
     } else {
-        log_event("Renaming of $host failed", $id, 'system');
+        log_event("Renaming of $host failed", $id, 'system', 5);
         if (__FILE__ === $_SERVER['SCRIPT_FILE_NAME']) {
             echo "Renaming of $host failed\n";
         } else {
@@ -344,6 +343,11 @@ function delete_device($id)
         $ret .= "Removed interface $int_id ($int_if)\n";
     }
 
+    // Remove sensors manually due to constraints
+    foreach (dbFetchRows("SELECT * FROM `sensors` WHERE `device_id` = ?", array($id)) as $sensor) {
+        $sensor_id = $sensor['sensor_id'];
+        dbDelete('sensors_to_state_indexes', "`sensor_id` = ?", array($sensor));
+    }
     $fields = array('device_id','host');
     foreach ($fields as $field) {
         foreach (dbFetch("SELECT table_name FROM information_schema.columns WHERE table_schema = ? AND column_name = ?", array($config['db_name'],$field)) as $table) {
@@ -362,7 +366,7 @@ function delete_device($id)
     }
 
     $ret .= "Removed device $host\n";
-    log_event("Device $host has been removed", 0, 'system');
+    log_event("Device $host has been removed", 0, 'system', 3);
     return $ret;
 }
 
@@ -564,15 +568,16 @@ function isSNMPable($device)
 {
     global $config;
 
-    $pos = snmp_get($device, "sysObjectID.0", "-Oqv", "SNMPv2-MIB");
-    if (empty($pos)) {
-        // Support for Hikvision
-        $pos = snmp_get($device, "SNMPv2-SMI::enterprises.39165.1.1.0", "-Oqv", "SNMPv2-MIB");
-    }
-    if ($pos === '' || $pos === false) {
-        return false;
-    } else {
+    $pos = snmp_check($device);
+    if ($pos === true) {
         return true;
+    } else {
+        $pos = snmp_get($device, "sysObjectID.0", "-Oqv", "SNMPv2-MIB");
+        if ($pos === '' || $pos === false) {
+            return false;
+        } else {
+            return true;
+        }
     }
 }
 
@@ -644,9 +649,35 @@ function getpollergroup($poller_group = '0')
     }
 }
 
-function createHost($host, $community, $snmpver, $port = 161, $transport = 'udp', $v3 = array(), $poller_group = '0', $port_assoc_mode = 'ifIndex', $snmphost = '', $force_add = false)
-{
-    global $config;
+/**
+ * Add a host to the database
+ *
+ * @param string $host The IP or hostname to add
+ * @param string $community The snmp community
+ * @param string $snmpver snmp version: v1 | v2c | v3
+ * @param int $port SNMP port number
+ * @param string $transport SNMP transport: udp | udp6 | udp | tcp6
+ * @param array $v3 SNMPv3 settings required array keys: authlevel, authname, authpass, authalgo, cryptopass, cryptoalgo
+ * @param int $poller_group distributed poller group to assign this host to
+ * @param string $port_assoc_mode field to use to identify ports: ifIndex, ifName, ifDescr, ifAlias
+ * @param string $snmphost device sysName to check for duplicates
+ * @param bool $force_add Do not detect the host os
+ * @return int the id of the added host
+ * @throws HostExistsException Throws this exception if the host already exists
+ * @throws Exception Throws this exception if insertion into the database fails
+ */
+function createHost(
+    $host,
+    $community,
+    $snmpver,
+    $port = 161,
+    $transport = 'udp',
+    $v3 = array(),
+    $poller_group = 0,
+    $port_assoc_mode = 'ifIndex',
+    $snmphost = '',
+    $force_add = false
+) {
     $host = trim(strtolower($host));
 
     $poller_group=getpollergroup($poller_group);
@@ -657,8 +688,10 @@ function createHost($host, $community, $snmpver, $port = 161, $transport = 'udp'
         $port_assoc_mode = get_port_assoc_mode_id($port_assoc_mode);
     }
 
-    $device = array('hostname' => $host,
+    $device = array(
+        'hostname' => $host,
         'sysName' => $host,
+        'os' => 'generic',
         'community' => $community,
         'port' => $port,
         'transport' => $transport,
@@ -669,28 +702,23 @@ function createHost($host, $community, $snmpver, $port = 161, $transport = 'udp'
         'port_association_mode' => $port_assoc_mode,
     );
 
-    $device = array_merge($device, $v3);
+    $device = array_merge($device, $v3);  // merge v3 settings
 
     if ($force_add !== true) {
         $device['os'] = getHostOS($device);
-    } else {
-        $device['os'] = 'generic';
     }
 
-    if ($device['os']) {
-        if (host_exists($host, $snmphost) === false) {
-            $device_id = dbInsert($device, 'devices');
-            if ($device_id) {
-                oxidized_reload_nodes();
-                return $device_id;
-            }
-        } else {
-            throw new HostExistsException("Already have host $host ($snmphost)");
-        }
+    if (host_exists($host, $snmphost)) {
+        throw new HostExistsException("Already have host $host ($snmphost)");
     }
 
-    // couldn't add the device
-    return false;
+    $device_id = dbInsert($device, 'devices');
+    if ($device_id) {
+        oxidized_reload_nodes();
+        return $device_id;
+    }
+
+    throw new \Exception("Failed to add host to the database, please run ./validate.php");
 }
 
 function isDomainResolves($domain)
@@ -796,7 +824,7 @@ function get_astext($asn)
 }
 
 # Use this function to write to the eventlog table
-function log_event($text, $device = null, $type = null, $reference = null)
+function log_event($text, $device = null, $type = null, $severity = 2, $reference = null)
 {
     if (!is_array($device)) {
         $device = device_by_id_cache($device);
@@ -807,6 +835,7 @@ function log_event($text, $device = null, $type = null, $reference = null)
         'reference' => ($reference ? $reference : "NULL"),
         'type' => ($type ? $type : "NULL"),
         'datetime' => array("NOW()"),
+        'severity' => $severity,
         'message' => $text);
 
     dbInsert($insert, 'eventlog');
@@ -841,9 +870,7 @@ function send_mail($emails, $subject, $message, $html = false)
     if (is_array($emails) || ($emails = parse_email($emails))) {
         $mail = new PHPMailer();
         $mail->Hostname = php_uname('n');
-        if (empty($config['email_from'])) {
-            $config['email_from'] = '"' . $config['project_name'] . '" <' . $config['email_user'] . '@'.$mail->Hostname.'>';
-        }
+
         foreach (parse_email($config['email_from']) as $from => $from_name) {
             $mail->setFrom($from, $from_name);
         }
@@ -910,13 +937,12 @@ function formatCiscoHardware(&$device, $short = false)
     }
 }
 
-# from http://ditio.net/2008/11/04/php-string-to-hex-and-hex-to-string-functions/
 function hex2str($hex)
 {
     $string='';
 
     for ($i = 0; $i < strlen($hex)-1; $i+=2) {
-        $string .= chr(hexdec($hex[$i].$hex[$i+1]));
+        $string .= chr(hexdec(substr($hex, $i, 2)));
     }
 
     return $string;
@@ -931,7 +957,7 @@ function snmp_hexstring($hex)
 # Check if the supplied string is an SNMP hex string
 function isHexString($str)
 {
-    return preg_match("/^[a-f0-9][a-f0-9]( [a-f0-9][a-f0-9])*$/is", trim($str));
+    return (bool)preg_match("/^[a-f0-9][a-f0-9]( [a-f0-9][a-f0-9])*$/is", trim($str));
 }
 
 # Include all .inc.php files in $dir
@@ -1445,10 +1471,10 @@ function snmpTransportToAddressFamily($transport)
  * Checks if the $hostname provided exists in the DB already
  *
  * @param string $hostname The hostname to check for
- *
+ * @param string $snmphost The sysName to check
  * @return bool true if hostname already exists
  *              false if hostname doesn't exist
-**/
+ */
 function host_exists($hostname, $snmphost = '')
 {
     global $config;
@@ -1457,7 +1483,12 @@ function host_exists($hostname, $snmphost = '')
         return true;
     } else {
         if ($config['allow_duplicate_sysName'] === false && !empty($snmphost)) {
-            $count = dbFetchCell("SELECT COUNT(*) FROM `devices` WHERE `sysName` = ?", array($snmphost));
+            if (!empty($config['mydomain'])) {
+                $full_host = rtrim($snmphost, '.') . '.' . $config['mydomain'];
+                $count = dbFetchCell("SELECT COUNT(*) FROM `devices` WHERE `sysName` = ? or `sysName` = ?", array($snmphost,$full_host));
+            } else {
+                $count = dbFetchCell("SELECT COUNT(*) FROM `devices` WHERE `sysName` = ?", array($snmphost));
+            }
             if ($count > 0) {
                 return true;
             } else {
@@ -1999,4 +2030,55 @@ function recordSnmpStatistic($stat, $start_time)
     $snmp_stats[$stat]++;
     $snmp_stats["${stat}_sec"] += $runtime;
     return $runtime;
+}
+
+/**
+ * @param $device
+ * @param bool $record_perf
+ * @return array
+ */
+function device_is_up($device, $record_perf = false)
+{
+    $address_family = snmpTransportToAddressFamily($device['transport']);
+    $ping_response = isPingable($device['hostname'], $address_family, $device['attribs']);
+    $device_perf              = $ping_response['db'];
+    $device_perf['device_id'] = $device['device_id'];
+    $device_perf['timestamp'] = array('NOW()');
+
+    if ($record_perf === true && can_ping_device($device['attribs']) === true) {
+        dbInsert($device_perf, 'device_perf');
+    }
+    $response              = array();
+    $response['ping_time'] = $ping_response['last_ping_timetaken'];
+    if ($ping_response['result']) {
+        if (isSNMPable($device)) {
+            $response['status']        = '1';
+            $response['status_reason'] = '';
+        } else {
+            echo 'SNMP Unreachable';
+            $response['status']        = '0';
+            $response['status_reason'] = 'snmp';
+        }
+    } else {
+        echo 'Unpingable';
+        $response['status']        = '0';
+        $response['status_reason'] = 'icmp';
+    }
+
+    if ($device['status'] != $response['status']) {
+        dbUpdate(array('status' => $response['status'], 'status_reason' => $response['status_reason']), 'devices', 'device_id=?', array($device['device_id']));
+        log_event('Device status changed to '.($response['status'] == '1' ? 'Up' : 'Down'). ' from ' . $response['status_reason'] . ' check.', $device, ($response['status'] == '1' ? 'up' : 'down'));
+    }
+    return $response;
+}
+
+function update_device_logo(&$device)
+{
+    $icon = getImageName($device, false);
+    if ($icon != $device['icon']) {
+        log_event('Device Icon changed ' . $device['icon'] . " => $icon", $device, 'system', 3);
+        $device['icon'] = $icon;
+        dbUpdate(array('icon' => $icon), 'devices', 'device_id=?', array($device['device_id']));
+        echo "Changed Icon! : $icon\n";
+    }
 }

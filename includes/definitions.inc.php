@@ -1,9 +1,11 @@
 <?php
-//
-// NO CHANGES TO THIS FILE, IT IS NOT USER-EDITABLE   #
-//
-// YES, THAT MEANS YOU                   #
-//
+/*
+ NO CHANGES TO THIS FILE, IT IS NOT USER-EDITABLE
+
+ YES, THAT MEANS YOU
+
+ Any changes you want to make here, make in config.php instead.
+*/
 
 $config['os']['default']['over'][0]['graph'] = 'device_processor';
 $config['os']['default']['over'][0]['text']  = 'Processor Usage';
@@ -308,6 +310,9 @@ $config['graph_types']['device']['canopy_generic_errorCount']['descr']   = 'Erro
 $config['graph_types']['device']['canopy_generic_crcErrors']['section'] = 'wireless';
 $config['graph_types']['device']['canopy_generic_crcErrors']['order']   = '15';
 $config['graph_types']['device']['canopy_generic_crcErrors']['descr']   = 'CRC Errors';
+$config['graph_types']['device']['canopy-generic-frameUtilization']['section'] = 'wireless';
+$config['graph_types']['device']['canopy-generic-frameUtilization']['order']   = '16';
+$config['graph_types']['device']['canopy-generic-frameUtilization']['descr']   = 'Frame Utilization';
 
 $config['graph_types']['device']['cambium_epmp_RFStatus']['section'] = 'wireless';
 $config['graph_types']['device']['cambium_epmp_RFStatus']['order']   = '0';
@@ -330,6 +335,9 @@ $config['graph_types']['device']['cambium_epmp_gpsSync']['descr']   = 'GPS Sync 
 $config['graph_types']['device']['cambium_epmp_freq']['section'] = 'wireless';
 $config['graph_types']['device']['cambium_epmp_freq']['order']   = '6';
 $config['graph_types']['device']['cambium_epmp_freq']['descr']   = 'Frequency';
+$config['graph_types']['device']['cambium-epmp-frameUtilization']['section'] = 'wireless';
+$config['graph_types']['device']['ccambium-epmp-frameUtilization']['order']   = '7';
+$config['graph_types']['device']['cambium-epmp-frameUtilization']['descr']   = 'Frame Utilization';
 
 $config['graph_types']['device']['wifi_clients']['section'] = 'wireless';
 $config['graph_types']['device']['wifi_clients']['order']   = '0';
