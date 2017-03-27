@@ -179,7 +179,7 @@ if (empty($strict_mode) === false) {
 // Test for correct character set and collation
 $collation = dbFetchRows("SELECT DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA S WHERE schema_name = '" . $config['db_name'] . "' AND  ( DEFAULT_CHARACTER_SET_NAME != 'utf8' OR DEFAULT_COLLATION_NAME != 'utf8_unicode_ci')");
 if (empty($collation) !== true) {
-    print_fail('MySQL Database collation is wrong: ' . implode(' ', $collation[0]), 'http://bit.ly/2lAG9H8');
+    print_fail('MySQL Database collation is wrong: ' . implode(' ', $collation[0]), 'https://t.libren.ms/-zdwk');
 }
 $collation_tables = dbFetchRows("SELECT T.TABLE_NAME, C.CHARACTER_SET_NAME, C.COLLATION_NAME FROM information_schema.TABLES AS T, information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS C WHERE C.collation_name = T.table_collation AND T.table_schema = '" . $config['db_name'] . "' AND  ( C.CHARACTER_SET_NAME != 'utf8' OR C.COLLATION_NAME != 'utf8_unicode_ci' );");
 if (empty($collation_tables) !== true) {
@@ -188,7 +188,7 @@ if (empty($collation_tables) !== true) {
 }
 $collation_columns = dbFetchRows("SELECT TABLE_NAME, COLUMN_NAME, CHARACTER_SET_NAME, COLLATION_NAME FROM information_schema.COLUMNS  WHERE TABLE_SCHEMA = '" . $config['db_name'] . "'  AND  ( CHARACTER_SET_NAME != 'utf8' OR COLLATION_NAME != 'utf8_unicode_ci' );");
 if (empty($collation_columns) !== true) {
-    print_fail('MySQL column collation is wrong: ', 'http://bit.ly/2lAG9H8');
+    print_fail('MySQL column collation is wrong: ', 'https://t.libren.ms/-zdwk');
     print_list($collation_columns, "\t %s\n");
 }
 
@@ -267,29 +267,40 @@ if (!function_exists('openssl_random_pseudo_bytes')) {
     }
 }
 
-// check discovery last run
-if (dbFetchCell('SELECT COUNT(*) FROM `devices` WHERE `last_discovered` IS NOT NULL') == 0) {
-    print_fail('Discovery has never run, check the cron job');
-} elseif (dbFetchCell("SELECT COUNT(*) FROM `devices` WHERE `last_discovered` <= DATE_ADD(NOW(), INTERVAL - 24 hour) AND `ignore` = 0 AND `disabled` = 0 AND `status` = 1") > 0) {
-    print_fail("Discovery has not completed in the last 24 hours, check the cron job");
-}
-
 // check poller
-if (dbFetchCell('SELECT COUNT(*) FROM `devices` WHERE `last_polled` IS NOT NULL') == 0) {
+if (dbFetchCell('SELECT COUNT(*) FROM `pollers`')) {
+    if (dbFetchCell('SELECT COUNT(*) FROM `pollers` WHERE `last_polled` >= DATE_ADD(NOW(), INTERVAL - 5 MINUTE)') == 0) {
+        print_fail("The poller has not run in the last 5 minutes, check the cron job");
+    }
+} else {
     print_fail('The poller has never run, check the cron job');
-} elseif (dbFetchCell("SELECT COUNT(*) FROM `devices` WHERE `last_polled` >= DATE_ADD(NOW(), INTERVAL - 5 minute) AND `ignore` = 0 AND `disabled` = 0 AND `status` = 1") == 0) {
-    print_fail("The poller has not run in the last 5 minutes, check the cron job");
-} elseif (count($devices = dbFetchColumn("SELECT `hostname` FROM `devices` WHERE (`last_polled` < DATE_ADD(NOW(), INTERVAL - 5 minute) OR `last_polled` IS NULL) AND `ignore` = 0 AND `disabled` = 0 AND `status` = 1")) > 0) {
-    print_warn("Some devices have not been polled in the last 5 minutes.
-        You may have performance issues. Check your poll log and see: http://docs.librenms.org/Support/Performance/");
-    print_list($devices, "\t %s\n");
 }
 
-if (count($devices = dbFetchColumn('SELECT `hostname` FROM `devices` WHERE last_polled_timetaken > 300 AND `ignore` = 0 AND `disabled` = 0 AND `status` = 1')) > 0) {
-    print_fail("Some devices have not completed their polling run in 5 minutes, this will create gaps in data.
+
+if (dbFetchCell('SELECT COUNT(*) FROM `devices`') == 0) {
+    print_warn("You have not added any devices yet.");
+} else {
+// check discovery last run
+    if (dbFetchCell('SELECT COUNT(*) FROM `devices` WHERE `last_discovered` IS NOT NULL') == 0) {
+        print_fail('Discovery has never run, check the cron job');
+    } elseif (dbFetchCell("SELECT COUNT(*) FROM `devices` WHERE `last_discovered` <= DATE_ADD(NOW(), INTERVAL - 24 HOUR) AND `ignore` = 0 AND `disabled` = 0 AND `status` = 1") > 0) {
+        print_fail("Discovery has not completed in the last 24 hours, check the cron job");
+    }
+
+// check devices polling
+    if (count($devices = dbFetchColumn("SELECT `hostname` FROM `devices` WHERE (`last_polled` < DATE_ADD(NOW(), INTERVAL - 5 MINUTE) OR `last_polled` IS NULL) AND `ignore` = 0 AND `disabled` = 0 AND `status` = 1")) > 0) {
+        print_warn("Some devices have not been polled in the last 5 minutes.
+        You may have performance issues. Check your poll log and see: http://docs.librenms.org/Support/Performance/");
+        print_list($devices, "\t %s\n");
+    }
+
+    if (count($devices = dbFetchColumn('SELECT `hostname` FROM `devices` WHERE last_polled_timetaken > 300 AND `ignore` = 0 AND `disabled` = 0 AND `status` = 1')) > 0) {
+        print_fail("Some devices have not completed their polling run in 5 minutes, this will create gaps in data.
         Check your poll log and refer to http://docs.librenms.org/Support/Performance/");
-    print_list($devices, "\t %s\n");
+        print_list($devices, "\t %s\n");
+    }
 }
+
 
 if ($git_found === true) {
     if ($versions['local_branch'] != 'master') {
