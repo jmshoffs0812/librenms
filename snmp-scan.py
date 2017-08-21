@@ -34,18 +34,18 @@ from subprocess import check_output, CalledProcessError
 from sys import stdout
 from time import time
 
-from enum import Enum
-
 try:
     from ipaddress import ip_network, ip_address
 except:
-    print('Could not import ipaddress module.  Please install python2-ipaddress.')
+    print('Could not import ipaddress module.  Please install python-ipaddress or use python3 to run this script')
+    print('Debian/Ubuntu: apt install python-ipaddress')
+    print('RHEL/CentOS: yum install python-ipaddress')
     exit(2)
 
 Result = namedtuple('Result', ['ip', 'hostname', 'outcome', 'output'])
 
 
-class Outcome(Enum):
+class Outcome:
     UNDEFINED = 0
     ADDED = 1
     UNPINGABLE = 2
