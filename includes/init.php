@@ -33,11 +33,6 @@ $install_dir = realpath(__DIR__ . '/..');
 $config['install_dir'] = $install_dir;
 chdir($install_dir);
 
-if (!getenv('TRAVIS')) {
-    require_once 'Net/IPv4.php';
-    require_once 'Net/IPv6.php';
-}
-
 # composer autoload
 require $install_dir . '/vendor/autoload.php';
 if (version_compare(PHP_VERSION, '5.4', '>=')) {
@@ -56,6 +51,7 @@ require_once $install_dir . '/includes/common.php';
 require_once $install_dir . '/includes/dbFacile.php';
 require_once $install_dir . '/includes/rrdtool.inc.php';
 require_once $install_dir . '/includes/influxdb.inc.php';
+require_once $install_dir . '/includes/opentsdb.inc.php';
 require_once $install_dir . '/includes/graphite.inc.php';
 require_once $install_dir . '/includes/datastore.inc.php';
 require_once $install_dir . '/includes/billing.php';
@@ -88,7 +84,6 @@ if (module_selected('alerts', $init_modules)) {
     require_once $install_dir . '/includes/device-groups.inc.php';
     require_once $install_dir . '/includes/alerts.inc.php';
 }
-
 
 // variable definitions
 require $install_dir . '/includes/cisco-entities.php';
@@ -166,8 +161,11 @@ if (module_selected('web', $init_modules)) {
         $config['title_image'] = 'images/librenms_logo_'.$config['site_style'].'.svg';
     }
     require $install_dir . '/html/includes/vars.inc.php';
-
-    load_all_os(true);
+    if (module_selected('nodb', $init_modules)) {
+        load_all_os(false);
+    } else {
+        load_all_os(true);
+    }
 }
 
 $console_color = new Console_Color2();
