@@ -1664,28 +1664,19 @@ function update_os_cache($force = false)
 }
 
 /**
- * @param $scale
- * @param $value
- * @return float
+ * Converts fahrenheit to celsius (with 2 decimal places)
+ * if $scale is not fahrenheit, it assumes celsius and  returns the value
+ *
+ * @param float $value
+ * @param string $scale fahrenheit or celsius
+ * @return string (containing a float)
  */
-function fahrenheit_to_celsius($scale, $value)
+function fahrenheit_to_celsius($value, $scale = 'fahrenheit')
 {
     if ($scale === 'fahrenheit') {
         $value = ($value - 32) / 1.8;
     }
     return sprintf('%.02f', $value);
-}
-
-/**
- *
- * Simply passes the fahrenheit value to fahrenheit_to_celsius()
- *
- * @param $value
- * @return float
- */
-function conv_fahrenheit($value)
-{
-    return fahrenheit_to_celsius('fahrenheit', $value);
 }
 
 function uw_to_dbm($value)
@@ -1700,7 +1691,11 @@ function uw_to_dbm($value)
  */
 function set_null($value, $default = null, $min = null)
 {
-    if (!is_numeric($value)) {
+    if (is_nan($value)) {
+        return $default;
+    } elseif (is_infinite($value)) {
+        return $default;
+    } elseif (!is_numeric($value)) {
         return $default;
     } elseif (isset($min) && $value < $min) {
         return $default;
@@ -1714,7 +1709,11 @@ function set_null($value, $default = null, $min = null)
  */
 function set_numeric($value, $default = 0)
 {
-    if (!isset($value) || !is_numeric($value)) {
+    if (is_nan($value) ||
+        is_infinite($value) ||
+        !isset($value) ||
+        !is_numeric($value)
+    ) {
         $value = $default;
     }
     return $value;
