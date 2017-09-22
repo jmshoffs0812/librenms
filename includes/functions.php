@@ -11,6 +11,7 @@
  *
  */
 
+use LibreNMS\Config;
 use LibreNMS\Exceptions\HostExistsException;
 use LibreNMS\Exceptions\HostIpExistsException;
 use LibreNMS\Exceptions\HostUnreachableException;
@@ -318,7 +319,7 @@ function renamehost($id, $new, $source = 'console')
     global $config;
 
     $host = dbFetchCell("SELECT `hostname` FROM `devices` WHERE `device_id` = ?", array($id));
-    if (!is_dir($config['rrd_dir']."/$new") && rename($config['rrd_dir']."/$host", $config['rrd_dir']."/$new") === true) {
+    if (!is_dir(get_rrd_dir($new)) && rename(get_rrd_dir($host), get_rrd_dir($new)) === true) {
         dbUpdate(array('hostname' => $new), 'devices', 'device_id=?', array($id));
         log_event("Hostname changed -> $new ($source)", $id, 'system', 3);
     } else {
@@ -374,7 +375,7 @@ function delete_device($id)
         }
     }
 
-    $ex = shell_exec("bash -c '( [ ! -d ".trim($config['rrd_dir'])."/".$host." ] || rm -vrf ".trim($config['rrd_dir'])."/".$host." 2>&1 ) && echo -n OK'");
+    $ex = shell_exec("bash -c '( [ ! -d ".trim(get_rrd_dir($host))." ] || rm -vrf ".trim(get_rrd_dir($host))." 2>&1 ) && echo -n OK'");
     $tmp = explode("\n", $ex);
     if ($tmp[sizeof($tmp)-1] != "OK") {
         $ret .= "Could not remove files:\n$ex\n";
@@ -979,95 +980,75 @@ function include_dir($dir, $regex = "")
     }
 }
 
+/**
+ * Check if port is valid to poll.
+ * Settings: empty_ifdescr, good_if, bad_if, bad_if_regexp, bad_ifname_regexp, bad_ifalias_regexp, bad_iftype
+ *
+ * @param array $port
+ * @param array $device
+ * @return bool
+ */
 function is_port_valid($port, $device)
 {
-
-    global $config;
-
-    if (empty($port['ifDescr']) && empty($port['ifAlias']) && empty($port['ifName'])) {
+    // check empty values first
+    if (empty($port['ifDescr'])) {
         // If these are all empty, we are just going to show blank names in the ui
-        $valid = 0;
-    } else {
-        $valid = 1;
-        $if = strtolower($port['ifDescr']);
-        $ifname = strtolower($port['ifName']);
-        $ifalias = strtolower($port['ifAlias']);
-        $fringe = $config['bad_if'];
-        if (is_array($config['os'][$device['os']]['bad_if'])) {
-            $fringe = array_merge($config['bad_if'], $config['os'][$device['os']]['bad_if']);
+        if (empty($port['ifAlias']) && empty($port['ifName'])) {
+            return false;
         }
-        $config['good_if'] = $config['good_if'] ?: array();
-        if (is_array($config['os'][$device['os']]['good_if'])) {
-            $good_if = array_merge($config['good_if'], $config['os'][$device['os']]['good_if']);
-        }
-        foreach ($fringe as $bi) {
-            if (stristr($if, $bi)) {
-                if (!str_contains($good_if, $if)) {
-                    $valid = 0;
-                    d_echo("ignored : $bi : $if");
-                }
-            }
-        }
-        if (is_array($config['bad_if_regexp'])) {
-            $fringe = $config['bad_if_regexp'];
-            if (is_array($config['os'][$device['os']]['bad_if_regexp'])) {
-                $fringe = array_merge($config['bad_if_regexp'], $config['os'][$device['os']]['bad_if_regexp']);
-            }
-            foreach ($fringe as $bi) {
-                if (preg_match($bi ."i", $if)) {
-                    $valid = 0;
-                    d_echo("ignored : $bi : " . $if);
-                }
-            }
-        }
-        if (is_array($config['bad_ifname_regexp'])) {
-            $fringe = $config['bad_ifname_regexp'];
-            if (is_array($config['os'][$device['os']]['bad_ifname_regexp'])) {
-                $fringe = array_merge($config['bad_ifname_regexp'], $config['os'][$device['os']]['bad_ifname_regexp']);
-            }
-            foreach ($fringe as $bi) {
-                if (preg_match($bi ."i", $ifname)) {
-                    $valid = 0;
-                    d_echo("ignored : $bi : ".$ifname);
-                }
-            }
-        }
-        if (is_array($config['bad_ifalias_regexp'])) {
-            $fringe = $config['bad_ifalias_regexp'];
-            if (is_array($config['os'][$device['os']]['bad_ifalias_regexp'])) {
-                $fringe = array_merge($config['bad_ifalias_regexp'], $config['os'][$device['os']]['bad_ifalias_regexp']);
-            }
-            foreach ($fringe as $bi) {
-                if (preg_match($bi ."i", $ifalias)) {
-                    $valid = 0;
-                    d_echo("ignored : $bi : ".$ifalias);
-                }
-            }
-        }
-        if (is_array($config['bad_iftype'])) {
-            $fringe = $config['bad_iftype'];
-            if (is_array($config['os'][$device['os']]['bad_iftype'])) {
-                $fringe = array_merge($config['bad_iftype'], $config['os'][$device['os']]['bad_iftype']);
-            }
-            foreach ($fringe as $bi) {
-                if (stristr($port['ifType'], $bi)) {
-                    $valid = 0;
-                    d_echo("ignored ifType : ".$port['ifType']." (matched: ".$bi." )");
-                }
-            }
-        }
-        if (empty($port['ifDescr']) && !$config['os'][$device['os']]['empty_ifdescr']) {
-            $valid = 0;
-        }
-        if ($device['os'] == "catos" && strstr($if, "vlan")) {
-            $valid = 0;
-        }
-        if ($device['os'] == "dlink") {
-            $valid = 1;
+
+        // ifDescr should not be empty unless it is explicitly allowed
+        if (!Config::getOsSetting($device['os'], 'empty_ifdescr', false)) {
+            return false;
         }
     }
 
-    return $valid;
+    $ifDescr = $port['ifDescr'];
+    $ifName  = $port['ifName'];
+    $ifAlias = $port['ifAlias'];
+    $ifType  = $port['ifType'];
+
+    if (str_contains($ifDescr, Config::getOsSetting($device['os'], 'good_if'), true)) {
+        return true;
+    }
+
+    foreach (Config::getCombined($device['os'], 'bad_if') as $bi) {
+        if (str_contains($ifDescr, $bi, true)) {
+            d_echo("ignored by ifDescr: $ifDescr (matched: $bi)\n");
+            return false;
+        }
+    }
+
+    foreach (Config::getCombined($device['os'], 'bad_if_regexp') as $bir) {
+        if (preg_match($bir ."i", $ifDescr)) {
+            d_echo("ignored by ifDescr: $ifDescr (matched: $bir)\n");
+            return false;
+        }
+    }
+
+    foreach (Config::getCombined($device['os'], 'bad_ifname_regexp') as $bnr) {
+        if (preg_match($bnr ."i", $ifName)) {
+            d_echo("ignored by ifName: $ifName (matched: $bnr)\n");
+            return false;
+        }
+    }
+
+
+    foreach (Config::getCombined($device['os'], 'bad_ifalias_regexp') as $bar) {
+        if (preg_match($bar ."i", $ifAlias)) {
+            d_echo("ignored by ifName: $ifAlias (matched: $bar)\n");
+            return false;
+        }
+    }
+
+    foreach (Config::getCombined($device['os'], 'bad_iftype') as $bt) {
+        if (str_contains($ifType, $bt)) {
+            d_echo("ignored by ifType: $ifType (matched: $bt )\n");
+            return false;
+        }
+    }
+
+    return true;
 }
 
 function scan_new_plugins()
@@ -1586,19 +1567,87 @@ function rrdtest($path, &$stdOutput, &$stdError)
     return $status['exitcode'];
 }
 
-function create_state_index($state_name)
+/**
+ * Create a new state index.  Update translations if $states is given.
+ *
+ * For for backward compatibility:
+ *   Returns null if $states is empty, $state_name already exists, and contains state translations
+ *
+ * @param string $state_name the unique name for this state translation
+ * @param array $states array of states, each must contain keys: descr, graph, value, generic
+ * @return int|null
+ */
+function create_state_index($state_name, $states = array())
 {
     $state_index_id = dbFetchCell('SELECT `state_index_id` FROM state_indexes WHERE state_name = ? LIMIT 1', array($state_name));
     if (!is_numeric($state_index_id)) {
-        $insert = array('state_name' => $state_name);
-        return dbInsert($insert, 'state_indexes');
-    } else {
+        $state_index_id = dbInsert(array('state_name' => $state_name), 'state_indexes');
+
+        // legacy code, return index so states are created
+        if (empty($states)) {
+            return $state_index_id;
+        }
+    }
+
+    // check or synchronize states
+    if (empty($states)) {
         $translations = dbFetchRows('SELECT * FROM `state_translations` WHERE `state_index_id` = ?', array($state_index_id));
         if (count($translations) == 0) {
             // If we don't have any translations something has gone wrong so return the state_index_id so they get created.
             return $state_index_id;
         }
+    } else {
+        sync_sensor_states($state_index_id, $states);
     }
+
+    return null;
+}
+
+/**
+ * Synchronize the sensor state translations with the database
+ *
+ * @param int $state_index_id index of the state
+ * @param array $states array of states, each must contain keys: descr, graph, value, generic
+ */
+function sync_sensor_states($state_index_id, $states)
+{
+    $new_translations = array_reduce($states, function ($array, $state) use ($state_index_id) {
+        $array[$state['value']] = array(
+            'state_index_id' => $state_index_id,
+            'state_descr' => $state['descr'],
+            'state_draw_graph' => $state['graph'],
+            'state_value' => $state['value'],
+            'state_generic_value' => $state['generic']
+        );
+        return $array;
+    }, array());
+
+    $existing_translations = dbFetchRows(
+        'SELECT `state_index_id`,`state_descr`,`state_draw_graph`,`state_value`,`state_generic_value` FROM `state_translations` WHERE `state_index_id`=?',
+        array($state_index_id)
+    );
+
+    foreach ($existing_translations as $translation) {
+        $value = $translation['state_value'];
+        if (isset($new_translations[$value])) {
+            if ($new_translations[$value] != $translation) {
+                dbUpdate(
+                    $new_translations[$value],
+                    'state_translations',
+                    '`state_index_id`=? AND `state_value`=?',
+                    array($state_index_id, $value)
+                );
+            }
+
+            // this translation is synchronized, it doesn't need to be inserted
+            unset($new_translations[$value]);
+        } else {
+            dbDelete('state_translations', '`state_index_id`=? AND `state_value`=?', array($state_index_id, $value));
+        }
+    }
+
+    // insert any new translations
+    dbBulkInsert($new_translations, 'state_translations');
 }
 
 function create_sensor_to_state_index($device, $state_name, $index)
@@ -2172,7 +2221,7 @@ function dump_db_schema()
                 'Field'   => $data['COLUMN_NAME'],
                 'Type'    => $data['COLUMN_TYPE'],
                 'Null'    => $data['IS_NULLABLE'] === 'YES',
-                'Default' => trim($data['COLUMN_DEFAULT'], "'") ?: 'NULL',
+                'Default' => isset($data['COLUMN_DEFAULT']) ? trim($data['COLUMN_DEFAULT'], "'") : 'NULL',
                 'Extra'   => $data['EXTRA'],
             );
         }
