@@ -513,7 +513,7 @@ function discover_link($local_port_id, $protocol, $remote_port_id, $remote_hostn
 {
     global $link_exists;
 
-    d_echo("Discover link: $local_port_id, $protocol, $remote_port_id, $remote_hostname, $remote_port, $remote_platform, $remote_version\n");
+    d_echo("Discover link: $local_port_id, $protocol, $remote_port_id, $remote_hostname, $remote_port, $remote_platform, $remote_version, $remote_device_id\n");
 
     if (dbFetchCell(
         'SELECT COUNT(*) FROM `links` WHERE `remote_hostname` = ? AND `local_port_id` = ? AND `protocol` = ? AND `remote_port` = ?',
@@ -529,14 +529,14 @@ function discover_link($local_port_id, $protocol, $remote_port_id, $remote_hostn
             'local_device_id' => $local_device_id,
             'protocol' => $protocol,
             'remote_hostname' => $remote_hostname,
-            'remote_device_id' => $remote_device_id,
+            'remote_device_id' => (int)$remote_device_id,
             'remote_port' => $remote_port,
             'remote_platform' => $remote_platform,
             'remote_version' => $remote_version,
         );
 
         if (!empty($remote_port_id)) {
-            $insert_data['remote_port_id'] = $remote_port_id;
+            $insert_data['remote_port_id'] = (int)$remote_port_id;
         }
 
         $inserted = dbInsert($insert_data, 'links');
@@ -552,8 +552,8 @@ function discover_link($local_port_id, $protocol, $remote_port_id, $remote_hostn
             'local_device_id' => $local_device_id,
             'remote_platform' => $remote_platform,
             'remote_version' => $remote_version,
-            'remote_device_id' => $remote_device_id,
-            'remote_port_id' => $remote_port_id
+            'remote_device_id' => (int)$remote_device_id,
+            'remote_port_id' => (int)$remote_port_id
         );
 
         $id = $data['id'];
@@ -1088,8 +1088,17 @@ function discovery_process(&$valid, $device, $sensor_type, $pre_cache)
             foreach ($raw_data as $index => $snmp_data) {
                 // get the value for this sensor, check 'value' and 'oid', if state string, translate to a number
                 $data_name = isset($data['value']) ? $data['value'] : $data['oid'];  // fallback to oid if value is not set
-                if (is_numeric($snmp_data[$data_name])) {
-                    $value = $snmp_data[$data_name];
+
+                $tmp_value = $snmp_data[$data_name];
+                if (!is_numeric($tmp_value)) {
+                    preg_match('/-?\d*\.?\d+/', $tmp_value, $temp_response);
+                    if (!empty($temp_response[0])) {
+                        $tmp_value = $temp_response[0];
+                    }
+                }
+
+                if (is_numeric($tmp_value)) {
+                    $value = $tmp_value;
                 } elseif ($sensor_type === 'state') {
                     // translate string states to values (poller does this as well)
                     $states = array_column($data['states'], 'value', 'descr');
@@ -1424,11 +1433,25 @@ function find_device_id($name = '', $ip = '', $mac_address = '')
  */
 function find_port_id($description, $identifier = '', $device_id = 0, $mac_address = null)
 {
-    $sql = 'SELECT `port_id` FROM `ports` WHERE (`ifDescr`=? OR `ifName`=?';
-    $params = array($description, $description);
+    if (!($device_id || $mac_address)) {
+        return 0;
+    }
+
+    $sql = 'SELECT `port_id` FROM `ports` WHERE (0';
+    $params = array();
+
+    if ($description) {
+        $sql .= ' OR `ifDescr`=? OR `ifName`=?';
+        $params[] = $description;
+        $params[] = $description;
+    }
 
     if ($identifier) {
-        $sql .= ' OR `ifDescr`=? OR `ifName`=?';
+        if (is_numeric($identifier)) {
+            $sql .= ' OR `ifIndex`=? OR `ifAlias`=?';
+        } else {
+            $sql .= ' OR `ifDescr`=? OR `ifName`=?';
+        }
         $params[] = $identifier;
         $params[] = $identifier;
     }
@@ -1442,7 +1465,7 @@ function find_port_id($description, $identifier = '', $device_id = 0, $mac_addre
 
     if ($device_id) {
         $sql .= ' AND `device_id`=?';
-        $params = $device_id;
+        $params[] = $device_id;
     }
 
     return (int)dbFetchCell($sql, $params);
