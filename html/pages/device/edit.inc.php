@@ -8,38 +8,26 @@ $link_array = array('page'    => 'device',
     'tab' => 'edit');
 
 if ($_SESSION['userlevel'] < '7') {
-  print_error("Insufficient Privileges");
-}
-else {
+    print_error("Insufficient Privileges");
+} else {
+    $panes['device']   = 'Device Settings';
+    $panes['snmp']     = 'SNMP';
+    if (!$device['snmp_disable']) {
+        $panes['ports']    = 'Port Settings';
+    }
 
-  $panes['device']   = 'Device Settings';
-  $panes['oxidizedcreds']   = 'Oxidized';
-  $panes['snmp']     = 'SNMP';
-  $panes['ports']    = 'Port Settings';
+    if (count($config['os'][$device['os']]['icons'])) {
+        $panes['icon']  = 'Icon';
+    }
 
-  if (count($config['os'][$device['os']]['icons'])) {
-    $panes['icon']  = 'Icon';
-  }
-
-  $panes['apps']     = 'Applications';
-  $panes['alerts']   = 'Alert Settings';
-  $panes['alert-rules'] = 'Alert Rules';
-  $panes['modules']  = 'Modules';
-
-  if ($config['show_services']) {
-    $panes['services'] = 'Services';
-  }
-
-  $panes['ipmi']     = 'IPMI';
-
-  if (dbFetchCell("SELECT COUNT(sensor_id) FROM `sensors` WHERE device_id = ? AND sensor_deleted='0' LIMIT 1", array($device['device_id'])) > 0) {
-    $panes['health'] = 'Health';
-  }
-
-    $panes['apps']     = 'Applications';
+    if (!$device['snmp_disable']) {
+        $panes['apps']     = 'Applications';
+    }
     $panes['alerts']   = 'Alert Settings';
     $panes['alert-rules'] = 'Alert Rules';
-    $panes['modules']  = 'Modules';
+    if (!$device['snmp_disable']) {
+        $panes['modules']  = 'Modules';
+    }
 
     if ($config['show_services']) {
         $panes['services'] = 'Services';
@@ -55,9 +43,11 @@ else {
         $panes['wireless-sensors'] = 'Wireless Sensors';
     }
 
-    $panes['storage']  = 'Storage';
-    $panes['processors']  = 'Processors';
-    $panes['mempools']  = 'Memory';
+    if (!$device['snmp_disable']) {
+        $panes['storage']  = 'Storage';
+        $panes['processors']  = 'Processors';
+        $panes['mempools']  = 'Memory';
+    }
     $panes['misc']     = 'Misc';
 
     $panes['component'] = 'Components';
