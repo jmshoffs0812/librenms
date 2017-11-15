@@ -216,3 +216,8 @@ if ($options['f'] === 'notify') {
 if ($options['f'] === 'peeringdb') {
     cache_peeringdb();
 }
+
+if ($options['f'] === 'refresh_os_cache') {
+    echo 'Clearing OS cache' . PHP_EOL;
+    unlink(Config::get('install_dir') . '/cache/os_defs.cache');
+}

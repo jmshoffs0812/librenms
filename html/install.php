@@ -11,15 +11,14 @@ if (empty($_POST) && !empty($_SESSION) && !isset($_REQUEST['stage'])) {
     }
 }
 
-//$stage = isset($_POST['stage']) ? $_POST['stage'] : 0;
-$stage = 6;
+$stage = isset($_POST['stage']) ? $_POST['stage'] : 0;
 
 // Before we do anything, if we see config.php, redirect back to the homepage.
-//if (file_exists('../config.php') && $stage != 6) {
-//    unset($_SESSION['stage']);
-//    header("Location: /");
-//    exit;
-//}
+if (file_exists('../config.php') && $stage != 6) {
+    unset($_SESSION['stage']);
+    header("Location: /");
+    exit;
+}
 
 // do not use the DB in init, we'll bring it up ourselves
 $init_modules = array('web', 'nodb');
@@ -202,11 +201,13 @@ if (is_writable(session_save_path() === '' ? '/tmp' : session_save_path())) {
 echo "<tr class='$row_class'><td>Session directory writable</td><td>$status</td><td>";
 if ($status == 'no') {
     echo session_save_path() . " is not writable";
-    $group_info = posix_getgrgid(filegroup(session_save_path()));
-    if ($group_info['gid'] !== 0) {  // don't suggest adding users to the root group
-        $group = $group_info['name'];
-        $user = get_current_user();
-        echo ", suggested fix <strong>usermod -a -G $group $user</strong>";
+    if (function_exists('posix_getgrgid')) {
+        $group_info = posix_getgrgid(filegroup(session_save_path()));
+        if ($group_info['gid'] !== 0) {  // don't suggest adding users to the root group
+            $group = $group_info['name'];
+            $user = get_current_user();
+            echo ", suggested fix <strong>usermod -a -G $group $user</strong>";
+        }
     }
 }
 echo "</td></tr>";

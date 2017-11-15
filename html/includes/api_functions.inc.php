@@ -271,6 +271,7 @@ function add_device()
     // Default status & code to error and change it if we need to.
     $status = 'error';
     $code   = 500;
+    $additional = array();
     // keep scrutinizer from complaining about snmpver not being set for all execution paths
     $snmpver = 'v2c';
     if (empty($data)) {
@@ -284,7 +285,14 @@ function add_device()
     $transport    = $data['transport'] ? mres($data['transport']) : 'udp';
     $poller_group = $data['poller_group'] ? mres($data['poller_group']) : 0;
     $force_add    = $data['force_add'] ? true : false;
-    if ($data['version'] == 'v1' || $data['version'] == 'v2c') {
+    $snmp_disable = ($data['snmp_disable']);
+    if ($snmp_disable) {
+        $additional = array(
+            'os'           => $data['os'] ? mres($data['os']) : 'ping',
+            'hardware'     => $data['hardware'] ? mres($data['hardware']) : '',
+            'snmp_disable' => 1,
+        );
+    } elseif ($data['version'] == 'v1' || $data['version'] == 'v2c') {
         if ($data['community']) {
             $config['snmp']['community'] = array($data['community']);
         }
@@ -309,7 +317,7 @@ function add_device()
     }
     if (empty($message)) {
         try {
-            $device_id = addHost($hostname, $snmpver, $port, $transport, $poller_group, $force_add);
+            $device_id = addHost($hostname, $snmpver, $port, $transport, $poller_group, $force_add, 'ifIndex', $additional);
             $code    = 201;
             $status  = 'ok';
             $message = "Device $hostname ($device_id) has been added successfully";
@@ -810,6 +818,7 @@ function get_port_graphs()
     } else {
         $columns = 'ifName';
     }
+    validate_column_list($columns, 'ports');
 
     // use hostname as device_id if it's all digits
     $device_id   = ctype_digit($hostname) ? $hostname : getidbyname($hostname);
@@ -882,6 +891,7 @@ function get_all_ports()
     } else {
         $columns = 'ifName';
     }
+    validate_column_list($columns, 'ports');
     $ports = dbFetchRows("SELECT $columns FROM `ports` WHERE `deleted` = 0");
 
     $output = array(
@@ -1684,4 +1694,26 @@ function list_logs()
     $app->response->setStatus($code);
     $app->response->headers->set('Content-Type', 'application/json');
     echo _json_encode($output);
+}
+
+function validate_column_list($columns, $tableName)
+{
+    global $config;
+
+    $column_names = explode(',', $columns);
+    $db_schema = Symfony\Component\Yaml\Yaml::parse(file_get_contents($config['install_dir'] . '/misc/db_schema.yaml'));
+    $valid_columns = array_column($db_schema[$tableName]['Columns'], 'Field');
+    $invalid_columns = array_diff(array_map('trim', $column_names), $valid_columns);
+
+    if (count($invalid_columns) > 0) {
+        $output = array(
+            'status'  => 'error',
+            'message' => 'Invalid columns: ' . join(',', $invalid_columns),
+        );
+        $app = \Slim\Slim::getInstance();
+        $app->response->setStatus(400);     // Bad request
+        $app->response->headers->set('Content-Type', 'application/json');
+        echo _json_encode($output);
+        $app->stop();
+    }
 }
