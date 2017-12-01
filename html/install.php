@@ -1,4 +1,6 @@
 <?php
+use LibreNMS\Authentication\Auth;
+
 session_start();
 if (empty($_POST) && !empty($_SESSION) && !isset($_REQUEST['stage'])) {
     $_POST = $_SESSION;
@@ -219,9 +221,12 @@ echo "</td></tr>";
       <div class="col-md-6 col-md-offset-3">
         <form class="form-inline" role="form" method="post">
           <input type="hidden" name="stage" value="1">
-          <button type="submit" class="btn btn-success pull-right" <?php if (!$complete) {
+          <button type="submit" class="btn btn-success pull-right"
+            <?php
+            if (!$complete) {
                 echo "disabled='disabled'";
-} ?>>Next Stage</button>
+            }
+            ?>>Next Stage</button>
         </form>
       </div>
     </div>
@@ -473,9 +478,9 @@ if (!file_exists("../config.php")) {
       </div>
       <div class="col-md-6">
 <?php
-if (auth_usermanagement()) {
-    if (!user_exists($add_user)) {
-        if (adduser($add_user, $add_pass, '10', $add_email)) {
+if (Auth::get()->canManageUsers()) {
+    if (!Auth::get()->userExists($add_user)) {
+        if (Auth::get()->addUser($add_user, $add_pass, '10', $add_email)) {
             echo("<div class='alert alert-success'>User has been added successfully</div>");
             $proceed = 0;
         } else {
@@ -496,9 +501,12 @@ if (auth_usermanagement()) {
           <input type="hidden" name="dbpass" value="<?php echo $dbpass; ?>">
           <input type="hidden" name="dbname" value="<?php echo $dbname; ?>">
           <input type="hidden" name="dbsocket" value="<?php echo $dbsocket; ?>">
-          <button type="submit" class="btn btn-success pull-right" <?php if ($proceed == "1") {
+          <button type="submit" class="btn btn-success pull-right"
+            <?php
+            if ($proceed == "1") {
                 echo "disabled='disabled'";
-} ?>>Generate Config</button>
+            }
+            ?>>Generate Config</button>
         </form>
       </div>
       <div class="col-md-3">

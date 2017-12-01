@@ -670,9 +670,18 @@ This script uses `rec_control get-all` to collect stats.
 
 4. Edit your snmpd.conf file (usually `/etc/snmp/snmpd.conf`) and add:
 `extend proxmox /usr/local/bin/proxmox`
-(Note: if your snmpd doesn't run as root, you might have to invoke the script using sudo. `extend proxmox /usr/bin/sudo /usr/local/bin/proxmox`)
 
-5. Restart snmpd on your host
+5. Note: if your snmpd doesn't run as root, you might have to invoke the script using sudo and modify the "extend" line
+```
+extend proxmox /usr/bin/sudo /usr/local/bin/proxmox 
+```
+
+after, edit your sudo users (usually `visudo`) and add at the bottom:
+```
+snmp ALL=(ALL) NOPASSWD: /usr/local/bin/proxmox
+```
+
+6. Restart snmpd on your host
 
 
 ### Raspberry PI
@@ -733,6 +742,15 @@ If you have a large number of more than one or two disks on a system, you should
 ```
  */3 * * * * /etc/snmp/smart -u
 ```
+
+6. If your snmp agent runs as user "snmp", edit your sudo users (usually `visudo`) and add at the bottom:
+```
+snmp ALL=(ALL) NOPASSWD: /etc/snmp/smart, /usr/sbin/smartctl
+```
+and modify your snmpd.conf file accordingly:
+```
+extend smart /usr/bin/sudo /etc/snmp/smart
+``` 
 
 ### Squid
 
