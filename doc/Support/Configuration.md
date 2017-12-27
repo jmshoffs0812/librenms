@@ -131,10 +131,6 @@ http_proxy=proxy.domain.com
 https_proxy=proxy.domain.com
 ```
 
-### Memcached
-
-[Memcached](../Extensions/Memcached.md)
-
 ### RRDCached
 
 [RRDCached](../Extensions/RRDCached.md)
@@ -313,6 +309,10 @@ The target maximum hostname length when applying the shorthost() function.
 You can increase this if you want to try and fit more of the hostname in graph titles.
 The default value is 12
 However, this can possibly break graph generation if this is very long.
+
+### Stacked Graphs
+You can enable stacked graphs instead of the default inverted graphs. 
+Enabling them is possible via webui Global Settings -> Webui Settings -> Graph settings -> Use stacked graphs
 
 ### Add host settings
 The following setting controls how hosts are added.  If a host is added as an ip address it is checked to ensure the ip is not already present.  If the ip is present the host is not added.
